@@ -1,0 +1,57 @@
+#include <SoftwareSerial.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <DHT.h>
+
+#define DHTPIN 4       // DHT11 module DATA pin connected to D4
+#define DHTTYPE DHT11  // DHT11 sensor type
+
+SoftwareSerial BT(2, 3);  // RX, TX for Bluetooth
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // LCD address 0x27 
+DHT dht(DHTPIN, DHTTYPE);  // Initialize DHT sensor
+
+String lastMessage = "";
+
+void setup() {
+    Serial.begin(9600);
+    BT.begin(9600); 
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0, 0);
+    lcd.print("BT Notice Board");
+    delay(3000);
+    dht.begin();  // Start DHT11 sensor
+    delay(2000); 
+}
+
+void loop() {
+    if (BT.available()) {  
+        lastMessage = "";  // Clear previous message
+        while (BT.available()) {
+            char c = BT.read();
+            lastMessage += c;           
+        }
+        Serial.println("Received: " + lastMessage);  // Debugging log
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print(lastMessage.substring(0, 16));
+    }
+
+    // Read temperature from DHT11 module
+    float temp = dht.readTemperature(false) ; // Read in Celsius
+
+    // Debugging log
+    Serial.print("Temperature: ");
+    Serial.println(temp);
+
+    lcd.setCursor(0, 1);
+    if (isnan(temp)) {
+        lcd.print("Temp: Error");  
+    } else {
+        lcd.print("Temp: ");
+        lcd.print(temp, 2);  
+        lcd.print(" C   "); 
+    }
+
+    delay(2500);  
+}
